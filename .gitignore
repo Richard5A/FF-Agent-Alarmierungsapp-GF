@@ -1,0 +1,6 @@
+/.vercel/
+/package-lock.json
+/node_modules/
+/components/dist/
+.env*.local
+.vercel

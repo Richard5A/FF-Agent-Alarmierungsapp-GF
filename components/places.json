@@ -1,0 +1,127 @@
+[
+  {
+    "name": "Sekretariat",
+    "aliases": [
+      "Seki"
+    ],
+    "lat": 48.14055192273461,
+    "lng": 11.404064774968555,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 5 (Eingang Gymnasium) ODER Kreuzung Bodenseestraße + Hans-Dietrich-Genscher-Straße"
+  },
+  {
+    "name": "C5",
+    "isPrefix": true,
+    "lat": 48.140913943265716,
+    "lng": 11.406990046378384,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 3 (Eingang Realschule)"
+  },
+  {
+    "name": "C4",
+    "isPrefix": true,
+    "lat": 48.140872010139404,
+    "lng": 11.40629733872322,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 3 (Eingang Realschule)"
+  },
+  {
+    "name": "C3",
+    "isPrefix": true,
+    "lat": 48.140766056047134,
+    "lng": 11.405560224317451,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 5 (Eingang Gymnasium)"
+  },
+  {
+    "name": "C2",
+    "isPrefix": true,
+    "lat": 48.140682056088124,
+    "lng": 11.404877410842602,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 5 (Eingang Gymnasium)"
+  },
+  {
+    "name": "C1",
+    "isPrefix": true,
+    "lat": 48.14077910367999,
+    "lng": 11.404132490688427,
+    "description": "Anfahrt für RD: Hildegard-Hamm-Brücher-Straße 5 (Eingang Gymnasium)"
+  },
+  {
+    "name": "Mensa",
+    "aliases": [],
+    "lat": 48.14171442551752,
+    "lng": 11.406877771609464,
+    "description": "Anfahrt für RD: Helmut-Schmidt-Allee 41"
+  },
+  {
+    "name": "Kunst",
+    "aliases": [],
+    "lat": 48.141951109326364,
+    "lng": 11.406909267526684,
+    "description": "Anfahrt für RD: Helmut-Schmidt-Allee 41"
+  },
+  {
+    "name": "Musik",
+    "aliases": [],
+    "lat": 48.141951109326364,
+    "lng": 11.406909267526684,
+    "description": "Anfahrt für RD: Helmut-Schmidt-Allee 41"
+  },
+  {
+    "name": "Turnhalle 1",
+    "isPrefix": true,
+    "aliases": [
+      "Turnhalle1",
+      "Turnhalle",
+      "TH1",
+      "TH"
+    ],
+    "lat": 48.141957121793574,
+    "lng": 11.402745159763825,
+    "description": "Anfahrt für RD über Hans-Dietrich-Genscher-Straße 11."
+  },
+  {
+    "name": "Turnhalle 2",
+    "isPrefix": true,
+    "aliases": [
+      "TH2",
+      "Turnhalle2"
+    ],
+    "lat": 48.14260581622494,
+    "lng": 11.402541265076014,
+    "description": "Anfahrt für RD über Hans-Dietrich-Genscher-Straße 15."
+  },
+  {
+    "name": "Schwimmhalle",
+    "lat": 48.143175788624,
+    "lng": 11.402388300412793,
+    "description": "Anfahrt für RD über Hans-Dietrich-Genscher-Straße 17."
+  },
+  {
+    "name": "Spielfeld 1",
+    "aliases": [
+      "SF1",
+      "Spielfeld1"
+    ],
+    "lat": 48.141989678064654,
+    "lng": 11.40152405412446,
+    "description": null
+  },
+  {
+    "name": "Spielfeld 2",
+    "aliases": [
+      "SF2",
+      "Spielfeld2"
+    ],
+    "lat": 48.14047846682608,
+    "lng": 11.402363559910151,
+    "description": null
+  },
+  {
+    "name": "Spielfeld 3",
+    "aliases": [
+      "SF3",
+      "Spielfeld3"
+    ],
+    "lat": 48.14034243761737,
+    "lng": 11.40136577815515,
+    "description": null
+  }
+]

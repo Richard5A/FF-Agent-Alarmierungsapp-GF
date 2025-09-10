@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Unauthorized</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="/index.css">
+    <script type="module" src="/material.js"></script>
+</head>
+<body>
+<h1 id="header">Nicht berechtigt</h1>
+<button id="button" onclick="enterPassword()">Password eingeben</button>
+
+</body>
+<script>
+    function enterPassword() {
+        let psw = prompt("Password:")
+        document.getElementById("header").innerHTML = "Überprüfen..."
+        document.getElementById("button").disabled = true
+        fetch("/passwordcheck", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({psw: psw})
+        })
+            .then(response => {
+                console.log(response)
+                if (response.status === 200) {
+                    return response.json();
+                }
+                if (response.status === 403) {
+                    document.getElementById("header").innerHTML = "Nicht berechtigt";
+                    document.getElementById("button").disabled = false;
+                    return {unauthorized: true};
+                }
+            })
+            .then(data => {
+                if (data.unauthorized) {
+                    document.getElementById("header").innerHTML = "Nicht berechtigt";
+                    document.getElementById("button").disabled = false;
+                    return;
+                }
+
+                if (data.redirectUrl) {
+                    document.getElementById("header").innerHTML = "Weiterleiten...";
+                    window.location.href = data.redirectUrl;
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                document.getElementById("header").innerHTML = "Fehler!";
+                document.getElementById("button").disabled = false;
+            });
+
+    }
+</script>
+</html>
