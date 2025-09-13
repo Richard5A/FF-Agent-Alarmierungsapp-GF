@@ -21,17 +21,13 @@ export class PlaceRepository {
                 aliases.forEach(alias => this.prefixMatchMap.set(alias, place));
             }
         });
-
-        // Die Konsolenausgaben können für das Debugging während der Entwicklung nützlich sein.
-        console.log("exactMatchMap", this.exactMatchMap);
-        console.log("prefixMatchMap", this.prefixMatchMap);
     }
 
     /**
      * Findet einen Ort durch exakte Übereinstimmung (Name oder Alias) oder durch ein passendes Präfix.
      * Die Suche ist nicht case-sensitive.
      * @param {string} name Der zu suchende Name des Ortes.
-     * @returns {object|null} Das gefundene Ort-Objekt oder null.
+     * @returns {object|null} Das gefundene Ort-Objekt mit einem Zusatz, ob das Ergebnis basierend auf einem Prefix ist oder nicht, oder null.
      */
     findPlace(name) {
         const lowerCaseName = name.toLowerCase();
@@ -39,14 +35,14 @@ export class PlaceRepository {
         // 1. Exakte Suche (sehr effizient)
         const exactMatch = this.exactMatchMap.get(lowerCaseName);
         if (exactMatch) {
-            return exactMatch;
+            return {...exactMatch, asPrefix: false};
         }
 
         // 2. Präfix-Suche (aufwändiger, aber optimiert)
         // Iteriere über die Einträge der Präfix-Map. Die Schlüssel sind bereits kleingeschrieben.
         for (const [prefix, place] of this.prefixMatchMap.entries()) {
             if (lowerCaseName.startsWith(prefix)) {
-                return place;
+                return {...place, asPrefix: true};
             }
         }
 

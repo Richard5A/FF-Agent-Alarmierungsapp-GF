@@ -28,3 +28,4 @@ Vercel ready
 self-hosting (untested)
 
 
+

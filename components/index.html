@@ -34,8 +34,16 @@
     <div id="placeContainer">
         <md-filled-text-field class="singleLine" id="place" hasTrailingIcon label="Einsatzort *">
             <md-icon id="placeIcon" style="display: none" slot="trailing-icon">check</md-icon>
+            <md-icon id="mapPlaceIcon" style="display: none" slot="trailing-icon">location_on</md-icon>
         </md-filled-text-field>
-    <ul id="placeDropdown" tabindex="-1"></ul>
+        <md-outlined-button id="mapButton">
+            <md-icon slot="icon">map</md-icon>
+            <span id="mapButtonSpan">Karte öffnen</span>
+        </md-outlined-button>
+        <div id="map" style="display: none">
+            <md-filled-icon-button id="mapHomeButton" class="home-button"><md-icon>home</md-icon></md-filled-icon-button>
+        </div>
+        <ul id="placeDropdown" tabindex="-1"></ul>
     </div>
     <md-filled-text-field type="textarea" id="description" label="Meldebild (Beschreibung)"></md-filled-text-field>
     <md-filled-text-field type="textarea" id="details" label="Details"></md-filled-text-field>
