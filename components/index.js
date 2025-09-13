@@ -1,6 +1,9 @@
 // noinspection JSUnresolvedReference
 
+import * as ApiService from "./ApiService.js";
+import {debugLog} from "./ApiService.js";
 import {PlaceRepository} from "./PlaceRepository"
+import {MapService} from "./MapService.js";
 
 function main() {
 
@@ -10,7 +13,10 @@ function main() {
     const detailsFeld = document.getElementById('details');
     const leitungSchalter = document.getElementById('notifyLeader');
     const alarmButton = document.getElementById('triggerAlarm');
+    const mapButton = document.getElementById('mapButton')
+    const mapHomeButton = document.getElementById('mapHomeButton');
     const ortIcon = document.getElementById('placeIcon');
+    const mapOrtIcon = document.getElementById('mapPlaceIcon');
     const overlay = document.getElementById('overlay');
     const peopleList = document.getElementById('peopleList');
     const alarmInfo = document.getElementById('alarminfo');
@@ -21,29 +27,51 @@ function main() {
     const pushSpinner = document.getElementById('pushSpinner');
     const leaderLabel = document.getElementById('leaderLabel');
     const placeRepo = new PlaceRepository()
-    const params = new Proxy(new URLSearchParams(window.location.search), {
-        get: (searchParams, prop) => searchParams.get(prop),
+
+    // --- Map Service Initialisierung ---
+    const mapService = new MapService('map', (selection) => {
+        debugLog("[Map]", "Location selected from map:", selection);
+        if (selection.source === 'manual') {
+            if (placeRepo.findPlace(place?.name ?? "")) ortFeld.value = "";
+            place = {name: ortFeld.value, lat: selection.lat, lng: selection.lng};
+            mapOrtIcon.style.display = 'block';
+            ortIcon.style.display = 'none';
+        } else { // 'poi'
+            place = placeRepo.findPlace(selection.name);
+            ortFeld.value = selection.name
+            mapOrtIcon.style.display = 'none';
+            ortIcon.style.display = 'block';
+        }
+        checkForm();
     });
-    let securityKey = params.securitykey;
+    try {
+        mapService.initialize();
+    } catch (e) {
+        console.error("Map initialization failed:", e);
+        mapButton.disabled = true;
+    }
+
+    let securityKey = new URLSearchParams(window.location.search).get("securitykey")
     let place = null
     let interval;
     let persons;
     let debug = window.env.DEBUG
-    let keyword = debug ? "TEST" : "FR"
+    const keyword = debug ? "TEST" : "FR"
     const groupsGUIDS = window.env.GROUP_GUIDS
     const leader = window.env.LEADER_NAME
 
     function updateDropdown(filter = "") {
+        if (document.getElementById('map').style.display !== 'none') return
         const allPlaces = placeRepo.getAllPlaceNames();
-        console.log(allPlaces)
+        debugLog("[Index]", "AllPlaces:", allPlaces)
         let filtered = allPlaces;
         if (filter.trim() !== "") {
             filtered = allPlaces.filter(place => place.name.toLowerCase().includes(filter.toLowerCase()));
         }
         dropdown.innerHTML = "";
-        console.log(filtered)
+        debugLog("[Index]", "FilteredPlaces:", filtered)
         if (filtered.length === 0) {
-            dropdown.style.display = "none";
+            dropdown.style.display = 'none';
             return;
         }
         filtered.forEach(place => {
@@ -51,14 +79,16 @@ function main() {
             li.textContent = place.name;
             li.style.padding = "8px";
             li.style.cursor = "pointer";
-            li.addEventListener("mousedown", () => {
+            li.addEventListener('mousedown', () => {
+                debugLog("[Index]", 'Dropdown: Item clicked ->', place.name);
                 ortFeld.value = place.name;
-                dropdown.style.display = "none";
-                ortFeld.dispatchEvent(new Event("input"));
+                dropdown.style.display = 'none';
+                // Triggere das Input-Event manuell, um die Logik auszuführen
+                ortFeld.dispatchEvent(new Event('input'));
             });
             dropdown.appendChild(li);
         });
-        dropdown.style.display = "block";
+        dropdown.style.display = 'block';
     }
 
 // Zeige Dropdown, wenn das Feld fokussiert oder geändert wird
@@ -83,116 +113,115 @@ function main() {
     })
 
     ortFeld.addEventListener("input", () => {
-        place = placeRepo.findPlace(ortFeld.value)
-        if (place !== null || undefined) {
-            ortIcon.style.display = 'block'
+        place = placeRepo.findPlace(ortFeld.value); // place ist jetzt entweder das Objekt oder null
+
+        if (place) {
+            ortIcon.style.display = 'block';
+            mapOrtIcon.style.display = 'none';
+            mapService.selectPlaceByName(place.name);
         } else {
-            ortIcon.style.display = 'none'
+            ortIcon.style.display = 'none';
+            if (ortFeld.value.trim().length === 0 || mapService.activePoiMarker) {
+                mapService.resetSelection(); // Auswahl auf Karte zurücksetzen
+                mapOrtIcon.style.display = 'none';
+            }
         }
     })
 
 
     // Überprüfen, ob Ort und Typ ausgefüllt sind
     function checkForm() {
-        alarmButton.disabled = !(ortFeld.value.trim() !== '');
+        alarmButton.disabled = !(ortFeld.value.trim() !== '' || place?.lat);
     }
 
     ortFeld.addEventListener('input', checkForm);
     typFeld.addEventListener('input', checkForm);
     checkForm();
 
-    function sendAlarm() {
+    async function sendAlarm() {
         // Hier die Logik für die Alarmierung über die Web-API einfügen
-        const inputDetails = detailsFeld.value.length !== 0 ? (" || " + place?.description) : place?.description
-        const fullPlaceDesc = place !== null || place?.description !== undefined ? inputDetails : ""
+        const placeDescription = place?.description ? ` || ${place.description}` : "";
+        const fullDetails = detailsFeld.value + (detailsFeld.value && placeDescription ? placeDescription : placeDescription.substring(4));
         const data = {
-            object: place === null ? ortFeld.value : ("aliases" in place && place.aliases.find(alias => alias === ortFeld.value) === null ? place.name : ortFeld.value),
+            object: place?.asPrefix ? ortFeld.value : place?.name ?? ortFeld.value,
             type: typFeld.value,
             keyword: keyword + (leitungSchalter.selected && keyword !== "TEST" ? " + K" : ""),
             message: beschreibungFeld.value,
-            details: detailsFeld.value + fullPlaceDesc,
+            details: fullDetails,
             lat: place?.lat ?? null,
             lng: place?.lng ?? null,
 
         };
 
-        const dataString = JSON.stringify(data);
         overlay.style.display = 'flex';
-        fetch(`/triggerAlarm?securitykey=${securityKey}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: dataString
-        }).then(response => {
-                if (response.ok) {
-                    resetUI()
-                } else if (response.status !== 200) {
-                    sendBackupAlarm(data)
-                    alert('Fehler beim Auslösen der Alarms! Wechsel auf Backup!')
-                }
+
+        try {
+            const response = await ApiService.triggerAlarm(securityKey, data);
+            if (response.ok) {
+                resetUI();
+            } else {
+                alert('Fehler beim Auslösen des Alarms! Wechsel auf Backup!');
+                await sendBackupAlarm(data);
             }
-        ).catch(() => alert('Fehler beim Auslösen des Alarms!'))
+        } catch (error) {
+            alert('Ein Netzwerkfehler ist beim Auslösen des Alarms aufgetreten!');
+        }
     }
 
-    function sendBackupAlarm(data) {
-        data.keyword = "TEST"
-        fetch(`/triggerAlarm?securitykey=${securityKey}`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json",},
-            body: JSON.stringify(data)
-        }).then(r => {
-            if (r.ok) {
-                resetUI()
-                alert('Backup wurde erfolgreich ausgelöst!')
+    async function sendBackupAlarm(data) {
+        try {
+            const response = await ApiService.triggerBackupAlarm(securityKey, data);
+            if (response.ok) {
+                resetUI();
+                alert('Backup wurde erfolgreich ausgelöst!');
             }
-        }).catch(() => alert('Fehler beim Auslösen des Backups!'))
+        } catch (error) {
+            alert('Fehler beim Auslösen des Backups!');
+        }
     }
 
-    function sendPushMessage() {
+    async function handleSendPushMessage() {
         // UI blockieren und Spinner anzeigen
         push.disabled = true;
         pushSelect.disabled = true;
         pushButton.disabled = true;
         pushSpinner.style.display = 'flex';
 
-        const data = {
-            groups: [pushSelect.value],
-            message: push.value,
-        }
-
-        fetch(`/pushMessage?securitykey=${securityKey}`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(data)
-        }).then(r => {
-            if (r.ok) {
-                resetPush()
-                alert("Push erfolgreich gesendet")
+        try {
+            const response = await ApiService.sendPushMessage(securityKey, {
+                groups: [pushSelect.value],
+                message: push.value
+            });
+            if (response.ok) {
+                resetPush();
+                alert("Push erfolgreich gesendet");
             } else {
-                alert("Fehler beim Senden der Push-Nachricht.")
+                alert("Fehler beim Senden der Push-Nachricht.");
             }
-        }).catch(err => {
+        } catch (err) {
             console.error("Fehler beim Senden der Push-Nachricht:", err);
             alert("Ein Netzwerkfehler ist aufgetreten.");
-        }).finally(() => {
+        } finally {
             // UI wieder freigeben und Spinner ausblenden
             push.disabled = false;
             pushSelect.disabled = false;
             pushButton.disabled = false;
             pushSpinner.style.display = 'none';
-        })
+        }
     }
 
     function resetUI() {
+        debugLog("[Index]", 'resetUI: Resetting UI after alarm.');
         typFeld.value = ""
         ortFeld.value = ""
         detailsFeld.value = ""
         beschreibungFeld.value = ""
         leitungSchalter.selected = false
         ortIcon.style.display = 'none'
+        mapOrtIcon.style.display = 'none'
         place = null
-        overlay.style.display = 'none'
+        overlay.style.display = 'none';
+        mapService.resetSelection();
         updateFFAgentData()
     }
 
@@ -202,7 +231,11 @@ function main() {
     }
 
     alarmButton.addEventListener("click", sendAlarm);
-    pushButton.addEventListener("click", sendPushMessage)
+    pushButton.addEventListener("click", handleSendPushMessage)
+
+    // --- Event-Listener für Map-Buttons ---
+    mapButton.addEventListener("click", () => mapService.toggleVisibility(placeRepo.getAllPlaceNames()));
+    mapHomeButton.addEventListener("click", () => mapService.resetView());
 
     const startInterval = () => {
         if (!interval) {
@@ -222,19 +255,15 @@ function main() {
 
     async function updateFFAgentData() {
         try {
-            const [callRes, peopleRes] = await Promise.all([
-                fetch(`/call?securitykey=${securityKey}`, {method: "POST"}).then(r => r.json()),
-                fetch(`/people?securitykey=${securityKey}`, {method: "POST"}).then(r => r.json())
-            ]);
-
+            const {callRes, peopleRes} = await ApiService.fetchFFAgentData(securityKey);
             setAlarmInfo(callRes);
             setPeopleList(peopleRes);
-        } catch (error) {
-            console.error("Fehler beim Abrufen der Daten:", error);
+        } catch (error) { /* Fehler wird bereits im ApiService geloggt */
         }
     }
 
     function setPeopleList(data) {
+        debugLog("[Index]", 'setPeopleList: Updating people list.');
         peopleList.innerHTML = "";
         peopleList.style.padding = "0"
         if (!Object.keys(data).length) {
@@ -244,7 +273,7 @@ function main() {
 
         const fragment = document.createDocumentFragment();
         const headline = document.createElement("h2");
-        console.log(data.persons?.available)
+        debugLog("[Index]", "PeopleList:", data.persons?.available)
         headline.innerText = data.persons?.absent ? "Verfügbare Personen" : "Zusagen";
         fragment.appendChild(headline);
 
@@ -301,6 +330,7 @@ function main() {
     }
 
     function setAlarmInfo(data) {
+        debugLog("[Index]", 'setAlarmInfo: Updating alarm info.');
         alarmInfo.innerHTML = "";
 
         const title = document.createElement("h2");
@@ -317,6 +347,9 @@ function main() {
         } else {
             title.innerText = "Kein Einsatz aktiv";
             alarmInfo.appendChild(title);
+            // Das Zurücksetzen der Karte hier entfernt die manuelle Auswahl des Benutzers bei jedem Poll.
+            // Das sollte nur passieren, wenn ein Einsatz *gerade eben* beendet wurde, nicht bei jedem Check.
+            // mapManager.resetSelection(); // ENTFERNT
         }
     }
 
@@ -347,6 +380,5 @@ function main() {
     leaderLabel.innerText = `${leader} mit alarmieren`
 
 }
-
 
 document.addEventListener('DOMContentLoaded', main);

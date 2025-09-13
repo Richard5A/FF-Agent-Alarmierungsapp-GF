@@ -2,6 +2,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 @import "../assets/material-css/dark.css" (prefers-color-scheme: dark);
 @import "../assets/material-css/light.css" (prefers-color-scheme: light);
+@import "https://unpkg.com/leaflet/dist/leaflet.css";
 
 
 ::-webkit-scrollbar {
@@ -66,6 +67,11 @@ md-filled-text-field {
     align-items: center;
 }
 
+#mapButton {
+    width: 45vw;
+    margin-bottom: 1vh;
+}
+
 .overlay {
     position: fixed;
     top: 0;
@@ -78,6 +84,19 @@ md-filled-text-field {
     display: none;
     align-items: center;
     justify-content: center;
+}
+
+#map {
+    height: 50vh;
+    width: 45vw;
+    margin: 1vh;
+}
+
+.home-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
 }
 
 md-list {
@@ -164,6 +183,7 @@ md-list-item.requested {
 #placeDropdown {
     display: none;
     position: absolute;
+    top: 74px; /* Neu: Positioniert das Dropdown unter dem Textfeld */
     z-index: 1000;
     max-height: 200px;
     list-style: none;
@@ -180,5 +200,8 @@ md-list-item.requested {
 
 #placeContainer {
     position: relative;
-    gap: 0;
+    /* Neu: Elemente im Container vertikal anordnen und zentrieren */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
