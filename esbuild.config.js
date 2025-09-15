@@ -7,7 +7,8 @@ const envVars = {
     // Lese die Variablen aus process.env. Fallbacks sind weiterhin eine gute Praxis.
     LEADER_NAME: process.env.LEADER_NAME ?? '',
     GROUP_GUIDS: process.env.GROUP_GUIDS_JSON ? JSON.parse(process.env.GROUP_GUIDS_JSON) : [],
-    DEBUG: process.env.DEBUG === "true"
+    DEBUG: process.env.DEBUG === "true",
+    USE_MAP: process.env.USE_MAP === "true"
 };
 
 async function build() {

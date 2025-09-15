@@ -60,16 +60,6 @@ const agent = new https.Agent({
     passphrase: config.CERT_PASSWORD,
 });
 
-const LOG_FILE = path.join(__dirname, "..", "server.log");
-
-function writeLog(message, isError = false) {
-    const now = new Date().toISOString();
-    const logLine = `[${now}]${isError ? " [ERROR]" : ""} ${message}\n`;
-    fs.appendFile(LOG_FILE, logLine, err => {
-        if (err) console.error("Fehler beim Schreiben ins Log:", err);
-    });
-}
-
 app.use(express.json());
 
 /**
@@ -78,10 +68,9 @@ app.use(express.json());
  * @param {'triggerAlarm' | 'pushMessage'} endpoint The API endpoint to call.
  * @param {object} req The JSON payload for the request.
  * @param res
- * @param {string} ip The request IP for logging.
  * @returns {Promise<void>}
  */
-async function sendFfAgentRequest(endpoint, req, res, ip) {
+async function sendFfAgentRequest(endpoint, req, res) {
     const securityKey = req.query.securitykey;
 
     if (config.DEBUG) {
@@ -136,27 +125,21 @@ async function sendFfAgentRequest(endpoint, req, res, ip) {
 
         if (response.ok) {
             const successMessage = endpoint === 'triggerAlarm' ? 'Alarm was successfully triggered!' : 'Push was successfully sent!';
-            writeLog(`${endpoint} ausgelöst von ${ip}`);
             res.status(200).send(successMessage);
         } else {
-            const errorText = await response.text();
-            const errorMessage = `Fehler bei ${endpoint}: Status ${response.status}, Fehler: ${errorText}, Request: ${dataString}, IP: ${ip}`;
-            writeLog(errorMessage, true);
             res.status(response.status).send(`Error during ${endpoint}.`);
         }
     } catch (error) {
-        const exceptionMessage = `Exception bei ${endpoint}: ${error.stack}, Request: ${dataString}, IP: ${ip}`;
-        writeLog(exceptionMessage, true);
         res.status(500).send(`Internal server error during ${endpoint}.`);
     }
 }
 
 app.post(`/triggerAlarm`, (req, res) => {
-    sendFfAgentRequest('triggerAlarm', req, res, req.ip);
+    sendFfAgentRequest('triggerAlarm', req, res);
 });
 
 app.post(`/pushMessage`, (req, res) => {
-    sendFfAgentRequest('pushMessage', req, res, req.ip);
+    sendFfAgentRequest('pushMessage', req, res);
 });
 
 // --- FF-Agent WidgetViewApi Data Fetching ---
@@ -216,7 +199,6 @@ app.get('/', (req, res) => {
         res.status(401)
             .sendFile(path.join(__dirname, "..", "components", "failed.html"));
     } else {
-        writeLog(`Authorized access from ${req.ip}`);
         res.status(200).sendFile(path.join(__dirname, "..", "components", "index.html"));
     }
 });
@@ -240,10 +222,8 @@ app.get(`/material.js`, (req, res) => {
 app.post("/passwordcheck", (req, res) => {
     const data = req.body;
     if (data.psw === config.WEB_PASSWORD) {
-        writeLog(`Password check successful from ${req.ip}`);
         res.json({ redirectUrl: `/?securitykey=${config.PRIVATE_AUTH_KEY}`})
     } else {
-        writeLog(`Password check failed from ${req.ip}`, true);
         res.status(403).send('Unauthorized')
     }
 })
@@ -257,7 +237,6 @@ app.post("/people", async (req, res) => {
         const data = await getPeople();
         res.json(data);
     } catch (error) {
-        writeLog(`Error in /people endpoint: ${error.message}`, true);
         res.status(500).json({ error: "Failed to fetch people data." });
     }
 });
@@ -271,7 +250,6 @@ app.post("/call", async (req, res) => {
         const data = await getCall();
         res.json(data);
     } catch (error) {
-        writeLog(`Error in /call endpoint: ${error.message}`, true);
         res.status(500).json({ error: "Failed to fetch call data." });
     }
 });
