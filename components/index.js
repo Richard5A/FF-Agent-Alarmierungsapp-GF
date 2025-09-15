@@ -27,28 +27,33 @@ function main() {
     const pushSpinner = document.getElementById('pushSpinner');
     const leaderLabel = document.getElementById('leaderLabel');
     const placeRepo = new PlaceRepository()
+    const useMap = window.env.USE_MAP
+    let mapService = null
 
     // --- Map Service Initialisierung ---
-    const mapService = new MapService('map', (selection) => {
-        debugLog("[Map]", "Location selected from map:", selection);
-        if (selection.source === 'manual') {
-            if (placeRepo.findPlace(place?.name ?? "")) ortFeld.value = "";
-            place = {name: ortFeld.value, lat: selection.lat, lng: selection.lng};
-            mapOrtIcon.style.display = 'block';
-            ortIcon.style.display = 'none';
-        } else { // 'poi'
-            place = placeRepo.findPlace(selection.name);
-            ortFeld.value = selection.name
-            mapOrtIcon.style.display = 'none';
-            ortIcon.style.display = 'block';
+    if (useMap) {
+        mapButton.style.display = 'block';
+        mapService = new MapService('map', (selection) => {
+            debugLog("[Map]", "Location selected from map:", selection);
+            if (selection.source === 'manual') {
+                if (placeRepo.findPlace(place?.name ?? "")) ortFeld.value = "";
+                place = {name: ortFeld.value, lat: selection.lat, lng: selection.lng};
+                mapOrtIcon.style.display = 'block';
+                ortIcon.style.display = 'none';
+            } else { // 'poi'
+                place = placeRepo.findPlace(selection.name);
+                ortFeld.value = selection.name
+                mapOrtIcon.style.display = 'none';
+                ortIcon.style.display = 'block';
+            }
+            checkForm();
+        });
+        try {
+            mapService.initialize();
+        } catch (e) {
+            console.error("Map initialization failed:", e);
+            mapButton.disabled = true;
         }
-        checkForm();
-    });
-    try {
-        mapService.initialize();
-    } catch (e) {
-        console.error("Map initialization failed:", e);
-        mapButton.disabled = true;
     }
 
     let securityKey = new URLSearchParams(window.location.search).get("securitykey")
@@ -118,10 +123,10 @@ function main() {
         if (place) {
             ortIcon.style.display = 'block';
             mapOrtIcon.style.display = 'none';
-            mapService.selectPlaceByName(place.name);
+            if (mapService) mapService.selectPlaceByName(place.name);
         } else {
             ortIcon.style.display = 'none';
-            if (ortFeld.value.trim().length === 0 || mapService.activePoiMarker) {
+            if (mapService && (ortFeld.value.trim().length === 0 || mapService.activePoiMarker)) {
                 mapService.resetSelection(); // Auswahl auf Karte zurücksetzen
                 mapOrtIcon.style.display = 'none';
             }
@@ -221,7 +226,7 @@ function main() {
         mapOrtIcon.style.display = 'none'
         place = null
         overlay.style.display = 'none';
-        mapService.resetSelection();
+        if (mapService) mapService.resetSelection();
         updateFFAgentData()
     }
 
@@ -233,9 +238,11 @@ function main() {
     alarmButton.addEventListener("click", sendAlarm);
     pushButton.addEventListener("click", handleSendPushMessage)
 
-    // --- Event-Listener für Map-Buttons ---
-    mapButton.addEventListener("click", () => mapService.toggleVisibility(placeRepo.getAllPlaceNames()));
-    mapHomeButton.addEventListener("click", () => mapService.resetView());
+    if (useMap) {
+        // --- Event-Listener für Map-Buttons ---
+        mapButton.addEventListener("click", () => mapService.toggleVisibility(placeRepo.getAllPlaceNames()));
+        mapHomeButton.addEventListener("click", () => mapService.resetView());
+    }
 
     const startInterval = () => {
         if (!interval) {
