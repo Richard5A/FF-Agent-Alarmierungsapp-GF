@@ -84,10 +84,6 @@ app.use(express.json());
 async function sendFfAgentRequest(endpoint, req, res, ip) {
     const securityKey = req.query.securitykey;
 
-    if (config.DEBUG) {
-        console.log("Received securityKey:", securityKey);
-    }
-
     if (securityKey !== config.PRIVATE_AUTH_KEY) {
         res.status(401)
             .sendFile(path.join(__dirname, "..", "components", "failed.html"));
@@ -207,10 +203,6 @@ async function getPeople() {
 
 app.get('/', (req, res) => {
     const securityKey = req.query.securitykey;
-
-    if (config.DEBUG) {
-        console.log("Received securityKey:", securityKey);
-    }
 
     if (securityKey !== config.PRIVATE_AUTH_KEY) {
         res.status(401)
